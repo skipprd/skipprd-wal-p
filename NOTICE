@@ -1,0 +1,7 @@
+Third-party notice
+
+ObjectStore follows the layout and compare-and-swap map of OSWALD
+(https://github.com/nvartolomei/oswald), MIT License,
+Copyright (c) Nicolae Vartolomei.
+
+Skippr WAL machines and safety specs are original.

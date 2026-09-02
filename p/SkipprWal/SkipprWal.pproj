@@ -1,0 +1,11 @@
+<!-- Skippr ingest WAL (S3 pair-commit) P project. -->
+<Project>
+  <ProjectName>SkipprWal</ProjectName>
+  <InputFiles>
+    <PFile>./PSrc/</PFile>
+    <PFile>./PSpec/</PFile>
+    <PFile>./PTst/</PFile>
+  </InputFiles>
+  <OutputDir>./PGenerated/</OutputDir>
+  <IncludeProject>../Store/Store.pproj</IncludeProject>
+</Project>

@@ -1,0 +1,63 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  s3:
+    name: S3 WAL
+    runs-on:
+      - self-hosted
+      - skippr-linux-x64-1
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install P
+        run: |
+          dotnet tool install --global P --version 3.1.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Compile and check S3
+        env:
+          SCHEDULES: "1000"
+        run: ./scripts/check-s3.sh
+
+  disk:
+    name: Disk WAL
+    runs-on:
+      - self-hosted
+      - skippr-linux-x64-1
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install P
+        run: |
+          dotnet tool install --global P --version 3.1.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Compile and check disk
+        env:
+          SCHEDULES: "1000"
+        run: ./scripts/check-disk.sh

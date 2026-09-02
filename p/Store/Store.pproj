@@ -1,0 +1,8 @@
+<!-- Shared store machines for Skippr WAL P models. -->
+<Project>
+  <ProjectName>Store</ProjectName>
+  <InputFiles>
+    <PFile>./PSrc/</PFile>
+  </InputFiles>
+  <OutputDir>./PGenerated/</OutputDir>
+</Project>

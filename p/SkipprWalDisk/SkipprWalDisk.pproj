@@ -1,0 +1,11 @@
+<!-- Skippr ingest WAL (disk mutation-log + sync store) P project. -->
+<Project>
+  <ProjectName>SkipprWalDisk</ProjectName>
+  <InputFiles>
+    <PFile>./PSrc/</PFile>
+    <PFile>./PTst/</PFile>
+    <PFile>../SkipprWal/PSpec/</PFile>
+  </InputFiles>
+  <OutputDir>./PGenerated/</OutputDir>
+  <IncludeProject>../Store/Store.pproj</IncludeProject>
+</Project>

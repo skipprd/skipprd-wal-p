@@ -1,0 +1,7 @@
+PGenerated
+PCheckerOutput
+.vs
+*.dll
+*.pdb
+bin/
+obj/

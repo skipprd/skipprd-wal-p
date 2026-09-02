@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (gitignored) or export TF_VAR_* before apply.
+
+github_installation_id = ""
+# repo_id = "123456789"

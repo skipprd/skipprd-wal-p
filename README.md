@@ -2,9 +2,9 @@
 
 [![Check](https://github.com/skipprd/skipprd-wal-p/actions/workflows/check.yml/badge.svg)](https://github.com/skipprd/skipprd-wal-p/actions/workflows/check.yml)
 
-P specification of Skippr's ingest write-ahead log. This is the protocol spec for skipprd ELT WAL backends. It checks pair-ownership, ACK-after-commit, ingest Closed, flush atomicity, orphan ignore, reclaim order, and crash windows. Skippr WAL (S3 and Disk) is intended to support a single writer, read-after-write commit boundary, for use in the [skipprd ELT CLI tool](https://skippr.io/elt/getting-started/quickstart). Licensed under [Elastic License 2.0](LICENSE). OSWALD ObjectStore remains MIT; see [NOTICE](NOTICE).
+P specification of Skippr's ingest write-ahead log. This is the protocol spec for skipprd ELT WAL backends. It checks commit pair-ownership, ACK-after-commit, IngestBatch Closed, flush atomicity, orphan WAL segment ignore, reclaim order, and crash windows. Skippr WAL (S3 and Disk) is intended to support a single writer, read-after-write commit boundary, for use in the [skipprd ELT CLI tool](https://skippr.io/elt/getting-started/quickstart). 
 
-[OSWALD](https://github.com/nvartolomei/oswald) is the **scaffold** (P layout + `ObjectStore`). The invariants are Skippr's: random segment ids (I know... I was surprised I got away with it), two-object commit, GC that may leave holes after apply. There is no LSN, no manifest, no prefix-consistency check.
+Inspired by [OSWALD](https://github.com/nvartolomei/oswald), which provides the **scaffold** (P layout + `ObjectStore`). The invariants are Skippr's: random segment ids (I know... I was surprised I got away with it), two-object commit, GC that may leave holes after apply. There is no LSN, no manifest, no prefix-consistency check as they are not relevant to the ELT ingestion usecase that skipprd serves (so well I might add!)
 
 ## Status
 
@@ -97,13 +97,15 @@ Check runs on [Skippr Cloud Deploy Runners](https://skippr.io/cloud/deploy/runne
 
 A commit PUT timeout is not a failed persist. The writer GETs this snapshot's pair and binds it the same way recovery does. If the pair is there, ACK that id, mark the flush done, and do not mint another snapshot. If GET still misses after retries, panic: this process must not restore live bytes or start a second id for the same coalesced payload. Restart recovery admits the pair if it landed.
 
-The previous hole was: commit object exists, client sees unknown, next flush uses a new random id, recovery owns both. Coalesced segments are not row-idempotent, so that is a duplicate owned set. `SafetyOneFlushOneId` is that invariant. `timeoutReconcileAck`, `timeoutCommitNeverLanded`, `timeoutGetUnknownPanic`, and `timeoutLossyPuts` check the close-out; `retryNewId` and `restoreLiveNewId` are discarded paths and are expected to fail.
+The hole we're avoiding here is: commit object exists -> ACK client timeout -> client sees unknown -> next flush uses a new random id -> recovery owns both. Coalesced segments are not row-idempotent, so that is a duplicate owned set. `SafetyOneFlushOneId` is that invariant. `timeoutReconcileAck`, `timeoutCommitNeverLanded`, `timeoutGetUnknownPanic`, and `timeoutLossyPuts` check the close-out; `retryNewId` and `restoreLiveNewId` are discarded paths and are expected to fail.
 
 ## Ingest Closed and flush atomicity
 
+Skipprd's Ingest WAL achieves exactly-once semantics via a simple, all-or-nothing approach. Errors propergate up to the client, bypass Offsets DB and rely on retry (or startup) WAL recovery)
+
 Same rules on **S3 and disk**. Durability underneath stays per backend (S3 two-object PUT; disk sync + mutation log). Admit, Closed, take-all flush, and no restore-live are shared.
 
-- Offset keys are source objects stored in both pair objects so Recover can replay Closed.
+- Offset keys are source objects/kafka offsets, etc stored in both pair objects so Recover can replay Closed.
 - Submit of a Closed key is skip: it must not append to live or start a new persist.
 - Flush `take()`s **all** live keys into one snapshot id. Two units submitted before one flush share that id. A unit is never split across two ids.
 - Persist success or Recover admit publishes Closed, then the source may ACK. Unknown persist after retries panics. Do not put the taken keys back in live. Do not mint a new id.
